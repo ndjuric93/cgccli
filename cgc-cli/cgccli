@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+import argparse
+
+from helpers import collect_update_data_args
+
+from projects import print_projects
+from files import update_file_details
+from files import download_file
+from files import print_file_details
+from files import print_file_list
+
+
+def resolve_arguments(args, extra_args):
+    """ Resolves action depending on given arguments
+
+    Args:
+        args: Arguments passed to argparse parser
+        extra_args: Remaining arguments
+    """
+    if args.option == 'projects':
+        print_projects(token=args.token)
+    elif args.files == 'stat':
+        print_file_details(
+            token=args.token,
+            file_id=args.file
+        )
+    elif args.files == 'download':
+        download_file(
+            token=args.token,
+            file_id=args.file,
+            dest=args.dest
+        )
+    elif args.files == 'update':
+        update_file_details(
+            token=args.token,
+            file_id=args.file,
+            data=collect_update_data_args(extra_args)
+        )
+    elif args.files == 'list':
+        print_file_list(
+            token=args.token,
+            project_id=args.project
+        )
+
+
+def create_files_parser(subparser):
+    """ Create files subparser
+
+    Files parser contains project options.
+    Supported commands are list, stat, update and download
+
+    Args:
+        subparser: Parser for parsing files command options
+    """
+    parser = subparser.add_parser(name='files', help='Files action argument')
+    parser.add_argument(
+        'files', choices=['list', 'stat', 'update', 'download']
+    )
+    exclusive_group = parser.add_mutually_exclusive_group()
+    exclusive_group.add_argument('--project')
+    group = exclusive_group.add_argument_group('file')
+    group.add_argument('--file')
+    group.add_argument('--dest')
+
+
+def create_projects_parser(subparser):
+    """ Create projects subparser
+
+    Projects parser contains project options.
+    Currently only list option is supported
+
+    Args:
+        subparser: Parser for parsing project command options
+    """
+    parser = subparser.add_parser(
+        name='projects', help='Projects action argument')
+    parser.add_argument('projects', choices=['list'])
+
+
+def create_parser():
+    """ Create argument parser for CGC command line tool
+
+    Returns:
+        Parser for CGC command line tool
+    """
+    parser = argparse.ArgumentParser(description='CGC Command Line Tool')
+    parser.add_argument('--token', help='CGC CLI Token', required=True)
+    subparser = parser.add_subparsers(
+        help='Command option', dest='option', required=True
+    )
+
+    create_projects_parser(subparser)
+    create_files_parser(subparser)
+    return parser
+
+
+if __name__ == '__main__':
+    parser = create_parser()
+    args, extra_args = parser.parse_known_args()
+    resolve_arguments(
+        args=args,
+        extra_args=extra_args
+    )
